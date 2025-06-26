@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diesel Funding - Office Dashboard</title>
+    <style>
+        /* * =================================
+         * STYLING & THEME
+         * =================================
+         * This section controls the visual appearance of the dashboard.
+         * It uses CSS variables for easy theme changes from the settings panel.
+        */
+        :root {
+            --bg-color: #f8f9fa;
+            --card-color: #ffffff;
+            --text-color: #343a40;
+            --accent-color: #0056b3;
+            --shadow-color: rgba(0, 0, 0, 0.06);
+            --font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 1.5vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* LOGO */
+        .logo-container {
+            width: 100%;
+            text-align: center;
+            padding-bottom: 1.5vh;
+        }
+
+        .logo-container img {
+            max-width: 480px; 
+            max-height: 12vh;
+            object-fit: contain;
+        }
+
+        /* LAYOUT GRID */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: min-content;
+            gap: 1.5vw;
+            width: 100%;
+            max-width: 1920px;
+            flex-grow: 1;
+            height: calc(100vh - 14vh - 4vw);
+        }
+
+        /* CARD STYLES */
+        .card {
+            background-color: var(--card-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 5px 20px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: clamp(1rem, 1.4vw, 1.5rem);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        /* TOP ROW CARDS */
+        .top-row { padding: 15px; }
+        .top-row .content { font-size: clamp(1.5rem, 2vw, 2.2rem); font-weight: 700; }
+        .top-row .sub-content { font-size: clamp(0.9rem, 1.1vw, 1.2rem); color: #6c757d; margin-top: 8px;}
+
+        #weather-card img { width: clamp(40px, 5vw, 64px); height: auto; margin-right: 10px; }
+        #weather-card .content { display: flex; align-items: center; }
+
+        /* MIDDLE ROW CARDS */
+        .middle-row {
+            grid-column: span 2;
+            padding: 20px;
+            justify-content: flex-start;
+            min-height: 28vh;
+        }
+
+        .info-list {
+            width: 100%;
+            font-size: clamp(0.9rem, 1.3vw, 1.4rem); 
+            text-align: left;
+            margin-top: 10px;
+            flex-grow: 1;
+        }
+        .info-list div {
+            display: flex;
+            justify-content: space-between;
+            padding: clamp(3px, 0.6vh, 6px) 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+         .info-list div:last-child { border-bottom: none; }
+        .info-list span:first-child { font-weight: 600; }
+        .info-list span:last-child { font-weight: 500; }
+
+        /* UPDATES CARD */
+        #updates-card {
+            grid-column: span 4;
+            align-items: center; 
+            text-align: center;   
+        }
+
+        #updates-content {
+            width: 100%;
+            height: 100%;
+            font-size: clamp(1.4rem, 2.5vw, 2.8rem); 
+            font-weight: 500;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* SETTINGS PANEL */
+        #settings-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: var(--accent-color);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1001;
+        }
+        #settings-btn svg { width: 24px; height: 24px; fill: white; }
+
+        #settings-panel {
+            position: fixed;
+            top: 0;
+            left: -400px;
+            width: 350px;
+            height: 100%;
+            background-color: #fff;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            transition: left 0.3s ease-in-out;
+            z-index: 1000;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        #settings-panel.open { left: 0; }
+        #settings-panel h2 { margin-top: 0; color: #333; }
+        #settings-panel .form-group { margin-bottom: 20px; }
+        #settings-panel label { display: block; margin-bottom: 5px; color: #555; }
+        #settings-panel input[type="color"], #settings-panel select, #settings-panel textarea {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        #settings-panel textarea { height: 200px; resize: vertical; }
+        #settings-panel button {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--accent-color);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #close-settings {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="logo-container">
+        <!-- Using direct image link from Imgur as requested -->
+        <img id="company-logo" src="https://i.imgur.com/aHTOLXj.png" alt="Diesel Funding Logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x100?text=Logo+Not+Found';">
+    </div>
+
+    <div class="grid-container">
+        <!-- Top Row -->
+        <div id="date-time-card" class="card top-row">
+            <div class="content">--:--:-- --</div>
+            <div class="sub-content">----------</div>
+        </div>
+        <div id="hebrew-date-card" class="card top-row">
+            <div class="content">Loading...</div>
+            <div class="sub-content holiday"></div>
+        </div>
+        <div id="weather-card" class="card top-row">
+            <div class="content">
+                <img src="https://via.placeholder.com/64x64?text=?" alt="weather icon">
+                <span>--°F</span>
+            </div>
+            <div class="sub-content desc">Loading...</div>
+        </div>
+        <div id="parsha-card" class="card top-row">
+            <h3>Parashat Hashavua</h3>
+            <div class="content">Loading...</div>
+        </div>
+
+        <!-- Middle Row -->
+        <div id="zmanim-card" class="card middle-row">
+            <h3>Daily Zmanim</h3>
+            <div class="info-list" id="zmanim-list">Loading...</div>
+        </div>
+        
+        <div id="shabbat-card" class="card middle-row">
+            <h3>Shabbat Times</h3>
+            <div class="info-list" id="shabbat-list">Loading...</div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div id="updates-card" class="card">
+            <h3>Updates</h3>
+            <div id="updates-content">No updates yet. Click the settings icon to add notes.</div>
+        </div>
+    </div>
+
+    <!-- Settings Button and Panel -->
+    <button id="settings-btn" aria-label="Open Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9.9 15.9-19.4 15.9H181.9c-9.6 0-17.4-6.8-19.4-15.9l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L48.9 459.7c-8.8 2.8-18.6 .4-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C50.4 273.1 49.8 264.6 49.8 256s.6-17.1 1.7-25.4L7.2 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9.9-15.9 19.4-15.9h80.3c9.6 0 17.4 6.8 19.4 15.9l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.4 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z"/></svg>
+    </button>
+
+    <div id="settings-panel">
+        <button id="close-settings" aria-label="Close Settings">&times;</button>
+        <h2>Settings</h2>
+        <div class="form-group">
+            <label for="updates-input">Updates Notes</label>
+            <textarea id="updates-input" placeholder="Enter notes here..."></textarea>
+        </div>
+        <div class="form-group">
+            <label for="font-select">Font</label>
+            <select id="font-select">
+                <option value="'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif">Default</option>
+                <option value="'Times New Roman', Times, serif">Serif</option>
+                <option value="'Courier New', Courier, monospace">Monospace</option>
+                <option value="'Arial', sans-serif">Arial</option>
+                <option value="'Georgia', serif">Georgia</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="bg-color-picker">Background Color</label>
+            <input type="color" id="bg-color-picker">
+        </div>
+        <div class="form-group">
+            <label for="text-color-picker">Text Color</label>
+            <input type="color" id="text-color-picker">
+        </div>
+         <div class="form-group">
+            <label for="accent-color-picker">Accent Color</label>
+            <input type="color" id="accent-color-picker">
+        </div>
+        <button id="save-settings">Save and Apply</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- CONFIGURATION ---
+            const LATITUDE = 25.91;  // North Miami Beach, FL
+            const LONGITUDE = -80.16; // North Miami Beach, FL
+            // --- END CONFIGURATION ---
+
+            // --- DOM Elements ---
+            const timeEl = document.querySelector('#date-time-card .content');
+            const dateEl = document.querySelector('#date-time-card .sub-content');
+            const hebrewDateEl = document.querySelector('#hebrew-date-card .content');
+            const holidayEl = document.querySelector('#hebrew-date-card .holiday');
+            const tempEl = document.querySelector('#weather-card .content span');
+            const weatherDescEl = document.querySelector('#weather-card .sub-content');
+            const weatherIconEl = document.querySelector('#weather-card img');
+            const parshaEl = document.querySelector('#parsha-card .content');
+            const zmanimListEl = document.getElementById('zmanim-list');
+            const shabbatListEl = document.getElementById('shabbat-list');
+            const updatesContentEl = document.getElementById('updates-content');
+            const settingsBtn = document.getElementById('settings-btn');
+            const settingsPanel = document.getElementById('settings-panel');
+            const closeSettingsBtn = document.getElementById('close-settings');
+            const saveSettingsBtn = document.getElementById('save-settings');
+            const updatesInput = document.getElementById('updates-input');
+            const fontSelect = document.getElementById('font-select');
+            const bgColorPicker = document.getElementById('bg-color-picker');
+            const textColorPicker = document.getElementById('text-color-picker');
+            const accentColorPicker = document.getElementById('accent-color-picker');
+
+            // --- Load and Apply Settings ---
+            const applySettings = () => {
+                const settings = JSON.parse(localStorage.getItem('dashboardSettings')) || {};
+                const root = document.documentElement;
+
+                root.style.setProperty('--bg-color', settings.bgColor || '#f8f9fa');
+                root.style.setProperty('--card-color', settings.cardColor || '#ffffff');
+                root.style.setProperty('--text-color', settings.textColor || '#343a40');
+                root.style.setProperty('--accent-color', settings.accentColor || '#0056b3');
+                root.style.setProperty('--font-family', settings.font || "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif");
+                
+                updatesContentEl.textContent = settings.updates || 'No updates yet. Click the settings icon to add notes.';
+
+                // Populate settings panel with current values
+                updatesInput.value = settings.updates || '';
+                fontSelect.value = settings.font || "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif";
+                bgColorPicker.value = settings.bgColor || '#f8f9fa';
+                textColorPicker.value = settings.textColor || '#343a40';
+                accentColorPicker.value = settings.accentColor || '#0056b3';
+            };
+            
+            // --- Time & Date ---
+            const updateTime = () => {
+                const now = new Date();
+                timeEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            };
+
+            const formatTime = (dateString) => {
+                if (!dateString) return 'N/A';
+                return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            };
+
+            // --- Hebcal Data Fetching ---
+            const fetchHebcalData = async () => {
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                
+                const hebcalConverterUrl = `https://www.hebcal.com/converter?cfg=json&date=${todayStr}&g2h=1`;
+                const hebcalShabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&leyning=off&m=72&lg=s&latitude=${LATITUDE}&longitude=${LONGITUDE}&tzid=America/New_York`;
+                const hebcalZmanimUrl = `https://www.hebcal.com/zmanim?cfg=json&latitude=${LATITUDE}&longitude=${LONGITUDE}&tzid=America/New_York`;
+
+                // Fetch Date and Parsha
+                try {
+                    const [shabbatResponse, converterResponse] = await Promise.all([
+                        fetch(hebcalShabbatUrl),
+                        fetch(hebcalConverterUrl)
+                    ]);
+                    
+                    const shabbatData = await shabbatResponse.json();
+                    const converterData = await converterResponse.json();
+                    
+                    hebrewDateEl.textContent = converterData.hebrew;
+                    const specialEvent = (converterData.events || []).find(e => e.toLowerCase().includes('rosh chodesh') || e.toLowerCase().includes('fast'));
+                    holidayEl.textContent = specialEvent || '';
+
+                    const items = shabbatData.items;
+                    const parsha = items.find(item => item.category === 'parashat');
+                    parshaEl.textContent = parsha ? parsha.hebrew.replace('פרשת ', '') : 'No Parsha this week';
+
+                    const candleLighting = items.find(item => item.category === 'candles');
+                    const havdalah = items.find(item => item.category === 'havdalah');
+                   
+                    const shabbatTimes = {
+                        "Candle Lighting": formatTime(candleLighting?.date),
+                        "Havdalah": formatTime(havdalah?.date)
+                    };
+                    
+                    shabbatListEl.innerHTML = Object.entries(shabbatTimes)
+                        .map(([name, time]) => `<div><span>${name}</span> <span>${time}</span></div>`)
+                        .join('');
+
+                } catch (error) {
+                    console.error('Error fetching Shabbat/Parsha/Date data:', error);
+                    parshaEl.textContent = 'Error';
+                    hebrewDateEl.textContent = 'Error';
+                    shabbatListEl.innerHTML = '<div>Error loading times</div>';
+                }
+
+                // Fetch Zmanim separately for reliability
+                try {
+                    const zmanimResponse = await fetch(hebcalZmanimUrl);
+                    if (!zmanimResponse.ok) throw new Error('Zmanim API request failed');
+                    const zmanimData = await zmanimResponse.json();
+                     if (!zmanimData || !zmanimData.times) {
+                         throw new Error("Invalid Zmanim data received");
+                    }
+                    const zmanim = zmanimData.times;
+
+                    const zmanimToShow = {
+                        "הנץ החמה": formatTime(zmanim.sunrise),
+                        "סוף זמן קריאת שמע": formatTime(zmanim.sofZmanShmaMGA),
+                        "סוף זמן תפילה": formatTime(zmanim.sofZmanTfillaMGA),
+                        "חצות היום": formatTime(zmanim.chatzot),
+                        "מנחה גדולה": formatTime(zmanim.minchaGedola),
+                        "שקיעת החמה": formatTime(zmanim.shkiah),
+                        "לילה": formatTime(zmanim.tzeit)
+                    };
+                    
+                    zmanimListEl.innerHTML = Object.entries(zmanimToShow)
+                        .map(([name, time]) => `<div><span>${name}</span> <span>${time}</span></div>`)
+                        .join('');
+                    
+                    // Add Chatzos to Shabbat card from this data
+                    if (zmanim.chatzot) {
+                        const chatzotHTML = `<div><span>Chatzot (Friday)</span> <span>${formatTime(zmanim.chatzot)}</span></div>`;
+                        if (shabbatListEl.firstChild) {
+                             shabbatListEl.insertAdjacentHTML('afterbegin', chatzotHTML);
+                        } else {
+                            shabbatListEl.innerHTML = chatzotHTML;
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching Zmanim data:', error);
+                    zmanimListEl.innerHTML = '<div>Error loading Zmanim.</div>';
+                }
+            };
+            
+            // --- Weather Data Fetching (No API Key Required) ---
+            const fetchWeather = async () => {
+                try {
+                    const pointsResponse = await fetch(`https://api.weather.gov/points/${LATITUDE},${LONGITUDE}`);
+                    if (!pointsResponse.ok) throw new Error('Could not get weather station.');
+                    const pointsData = await pointsResponse.json();
+                    const forecastUrl = pointsData.properties.forecastHourly;
+
+                    const forecastResponse = await fetch(forecastUrl);
+                     if (!forecastResponse.ok) throw new Error('Could not get forecast.');
+                    const forecastData = await forecastResponse.json();
+
+                    const current_weather = forecastData.properties.periods[0];
+                    tempEl.textContent = `${current_weather.temperature}°F`;
+                    weatherDescEl.textContent = current_weather.shortForecast;
+                    weatherIconEl.src = current_weather.icon;
+                    weatherIconEl.alt = current_weather.shortForecast;
+                } catch (error) {
+                    console.error('Error fetching weather data:', error);
+                    tempEl.textContent = 'N/A';
+                    weatherDescEl.textContent = 'Weather unavailable';
+                }
+            };
+
+            // --- Settings Panel Logic ---
+            settingsBtn.addEventListener('click', () => settingsPanel.classList.add('open'));
+            closeSettingsBtn.addEventListener('click', () => settingsPanel.classList.remove('open'));
+            
+            saveSettingsBtn.addEventListener('click', () => {
+                const settings = {
+                    updates: updatesInput.value,
+                    font: fontSelect.value,
+                    bgColor: bgColorPicker.value,
+                    textColor: textColorPicker.value,
+                    accentColor: accentColorPicker.value,
+                };
+                settings.cardColor = (parseInt(settings.bgColor.substring(1, 3), 16) < 80) ? '#2d2d2d' : '#ffffff';
+                
+                localStorage.setItem('dashboardSettings', JSON.stringify(settings));
+                applySettings();
+                settingsPanel.classList.remove('open');
+            });
+            
+            // --- Initial Load and Timers ---
+            const initialLoad = async () => {
+                applySettings();
+                updateTime();
+                
+                await Promise.allSettled([
+                    fetchHebcalData(), 
+                    fetchWeather()
+                ]);
+
+                setInterval(updateTime, 1000); 
+                setInterval(() => {
+                    fetchHebcalData();
+                    fetchWeather();
+                }, 1000 * 60 * 30); 
+            };
+            
+            initialLoad();
+        });
+    </script>
+</body>
+</html>
